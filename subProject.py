@@ -1,28 +1,19 @@
-computers = [[1, 1, 0], [1, 1, 0], [0, 0, 1]]
-n = 3
+scoville = [1, 2, 3, 9, 10, 12]
+K = 7
 
-def dfs(graph, start_node, answerList):
-    visit, stack = [],[]
-    stack.append(start_node)
 
-    while stack:
-        node = stack.pop()
-        if node not in visit:
-            visit.append(node)
-            answerList[node] = 1
-            _list = [i for i, x in enumerate(graph[node]) if x == 1]
-            _list.remove(node)
-            stack.extend(_list)
-
-def solution(n, computers):
-    answerList = [0 for _ in range(n)]
+def solution(scoville, K):
     answer = 0
-    for i in range(len(computers)):
-        if answerList[i] == 0:
-            answer += 1
-            dfs(computers, i, answerList)
+    while True:
+        if min(scoville) > K:
+            break
+        elif len(scoville) < 2 or (K != 0 and max(scoville == 0)):
+            answer = -1
+            break
 
-        else:
-            continue
+        first = scoville.pop(scoville.index(min(scoville)))
+        second = scoville.pop(scoville.index(min(scoville)))
+        scoville.append(first + 2 * second)
+        answer += 1
 
     return answer
