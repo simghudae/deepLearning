@@ -1,9 +1,9 @@
 computers = [[1, 1, 0], [1, 1, 0], [0, 0, 1]]
 n = 3
 
-def dfs(graph, start_node, answerList):
-    visit, stack = [],[]
-    stack.append(start_node)
+def dfs(graph, startNode, answerList):
+    visit, stack = [], []
+    stack.append(startNode)
 
     while stack:
         node = stack.pop()
@@ -13,6 +13,7 @@ def dfs(graph, start_node, answerList):
             _list = [i for i, x in enumerate(graph[node]) if x == 1]
             _list.remove(node)
             stack.extend(_list)
+
 
 def solution(n, computers):
     answerList = [0 for _ in range(n)]
