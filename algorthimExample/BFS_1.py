@@ -1,4 +1,5 @@
 def BFS(graph, startNode):
+    #graph is dict type
     visit, queue = [], []
     queue.append(startNode)
     while queue:
