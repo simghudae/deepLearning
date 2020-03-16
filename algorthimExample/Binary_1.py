@@ -5,8 +5,6 @@ M = 485
 def calculationM(budgets, k):
     return sum([x if x < k else k for x in budgets])
 
-
-
 def solution(budgets, M):
     budgets.sort()
     _left, _answer, _right = M // len(budgets), M // len(budgets), budgets[-1]
