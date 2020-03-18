@@ -92,13 +92,9 @@ for step in range(100):
     #tensor board2
     summary = sess.run(merged, feed_dict={X: x_data, Y: y_data})
     writer.add_summary(summary, global_step=sess.run(global_step))
-
-
-
 # save tensor
 saver.save(sess, './model/dnn.ckpt', global_step=global_step)
 sess.close()
-
 
 #tensorboard --logdir=./logs
 
