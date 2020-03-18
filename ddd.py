@@ -56,6 +56,8 @@ if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
 else:
     sess.run(tf.global_variables_initializer())
 
+
+
 merged = tf.summary.merge_all()
 writer = tf.summary.FileWriter('./logs', sess.graph)
 

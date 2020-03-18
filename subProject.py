@@ -38,8 +38,8 @@ os.environ["CUDA_VISIBLE_DEVICES"] = '0'
 x_data = np.array([[0, 0], [1, 0], [1, 1], [0, 0], [0, 0], [0, 1]])
 y_data = np.array([[1, 0, 0], [0, 1, 0], [0, 0, 1], [1, 0, 0], [1, 0, 0], [0, 0, 1]])
 
-X = tf.placeholder(tf.float32)
-Y = tf.placeholder(tf.float32)
+X = tf.placeholder(tf.float32, name='X')
+Y = tf.placeholder(tf.float32, name='Y')
 # counting global step
 global_step = tf.Variable(0, trainable=False, name='global_step')
 
@@ -49,10 +49,16 @@ with tf.name_scope('layer1'):
     L1 = tf.add(tf.matmul(X, W1), b1)
     L1 = tf.nn.relu(L1)
 
+    tf.summary.histogram("X", X)
+    tf.summary.histogram("Weights1", W1)
+
 with tf.name_scope('layer2'):
     W2 = tf.Variable(tf.random_uniform([3, 3], -1., 1.), name='W2')
     b2 = tf.Variable(tf.zeros([3]), name='b2')
     L2 = tf.add(tf.matmul(L1, W2), b2)
+
+    tf.summary.histogram("Weights2", W2)
+    tf.summary.histogram("L2", L2)
 
 with tf.name_scope('optimizer'):
     cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(labels=Y, logits=L2))
@@ -67,13 +73,13 @@ with tf.name_scope('optimizer'):
 sess = tf.Session()
 saver = tf.train.Saver(tf.global_variables())
 
+
 # restore tensor
-ckpt = tf.train.get_checkpoint_state('./model')
+ckpt = tf.train.get_checkpoint_state('.\\model')
 if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
     saver.restore(sess, ckpt.model_checkpoint_path)
 else:
     sess.run(tf.global_variables_initializer())
-
 #tensor board1
 merged = tf.summary.merge_all()
 writer = tf.summary.FileWriter('./logs', sess.graph)
@@ -93,4 +99,6 @@ for step in range(100):
 saver.save(sess, './model/dnn.ckpt', global_step=global_step)
 sess.close()
 
+
+#tensorboard --logdir=./logs
 
