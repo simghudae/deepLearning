@@ -1,6 +1,7 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
+#MNIST CNN Case
 mnist = input_data.read_data_sets("./mnist/data", one_hot=True)
 
 X = tf.placeholder(tf.float32, [None, 28, 28, 1], name='output')
