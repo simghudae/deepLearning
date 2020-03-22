@@ -1,9 +1,11 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+
 tf.logging.set_verbosity(tf.logging.ERROR)
 
 mnist = input_data.read_data_sets("./mnist/data", one_hot=True)
-#tensorboard --logdir=./logs
+# tensorboard --logdir=./logs
+
 learningRate = 0.0001
 totalEpoch = 20
 batchSize = 100
@@ -22,13 +24,13 @@ with graphModel1.as_default():
             L1 = tf.layers.conv2d(X, filters=64, kernel_size=[3, 3], padding="SAME", activation=tf.nn.relu, name="L1",
                                   kernel_initializer=tf.contrib.layers.xavier_initializer())
             L1 = tf.layers.max_pooling2d(L1, pool_size=[2, 2], strides=[2, 2], padding="SAME")
-            L1 = tf.layers.batch_normalization(L1, rate=0.8, training=isTraining)
+            L1 = tf.layers.batch_normalization(L1, training=isTraining)
 
         with tf.name_scope('Layer2'):
             L2 = tf.layers.conv2d(L1, filters=64, kernel_size=[3, 3], padding="SAME", activation=tf.nn.relu, name="L2",
                                   kernel_initializer=tf.contrib.layers.xavier_initializer())
             L2 = tf.layers.max_pooling2d(L2, pool_size=[2, 2], strides=[2, 2], padding="SAME")
-            L2 = tf.layers.batch_normalization(L2, rate=0.8, training=isTraining)
+            L2 = tf.layers.batch_normalization(L2, training=isTraining)
 
         with tf.name_scope('Layer3'):
             L2 = tf.contrib.layers.flatten(L2)
@@ -40,7 +42,7 @@ with graphModel1.as_default():
 
         with tf.name_scope('Optimizer'):
             cost = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits_v2(logits=model, labels=Y))
-            optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost)
+            optimizer = tf.train.AdamOptimizer(learningRate).minimize(cost, global_step=globalStep)
             tf.summary.scalar("cost", cost)
 
         with tf.name_scope('Testing'):
@@ -50,14 +52,14 @@ with graphModel1.as_default():
 with tf.Session(graph=graphModel1) as sess:
     saver = tf.train.Saver(tf.global_variables())
     # print(tf.global_variables())
-    ckpt = tf.train.get_checkpoint_state('.\\model')
+    ckpt = tf.train.get_checkpoint_state('.\\model1')
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
         sess.run(tf.global_variables_initializer())
 
     merged = tf.summary.merge_all()
-    writer = tf.summary.FileWriter('./logs', sess.graph)
+    writer = tf.summary.FileWriter('./logs1', sess.graph)
 
     totalBatch = mnist.train.num_examples // batchSize
     for epoch in range(totalEpoch):
@@ -68,8 +70,8 @@ with tf.Session(graph=graphModel1) as sess:
             _cost, _ = sess.run([cost, optimizer], feed_dict={X: batchXs, Y: batchYs, isTraining: True})
             totalError += _cost
         print("epoch : {0}, error : {1:.3f}".format(epoch + 1, totalError / totalBatch))
+        summary = sess.run(merged, feed_dict={X: batchXs.reshape(-1, 28, 28, 1), Y: batchYs, isTraining: False})
+        writer.add_summary(summary, global_step=sess.run(globalStep))
 
     print("accuracy : {0}".format(sess.run(accuracy, feed_dict={X: mnist.test.images.reshape(-1, 28, 28, 1), Y: mnist.test.labels, isTraining: False})))
-    saver.save(sess, "./model/cnn.ckpt", global_step=globalStep)
-
-
+    saver.save(sess, "./model1/cnn.ckpt", global_step=globalStep)
