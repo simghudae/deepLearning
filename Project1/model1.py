@@ -22,13 +22,13 @@ with graphModel1.as_default():
             L1 = tf.layers.conv2d(X, filters=64, kernel_size=[3, 3], padding="SAME", activation=tf.nn.relu, name="L1",
                                   kernel_initializer=tf.contrib.layers.xavier_initializer())
             L1 = tf.layers.max_pooling2d(L1, pool_size=[2, 2], strides=[2, 2], padding="SAME")
-            L1 = tf.layers.dropout(L1, rate=0.8, training=isTraining)
+            L1 = tf.layers.batch_normalization(L1, rate=0.8, training=isTraining)
 
         with tf.name_scope('Layer2'):
             L2 = tf.layers.conv2d(L1, filters=64, kernel_size=[3, 3], padding="SAME", activation=tf.nn.relu, name="L2",
                                   kernel_initializer=tf.contrib.layers.xavier_initializer())
             L2 = tf.layers.max_pooling2d(L2, pool_size=[2, 2], strides=[2, 2], padding="SAME")
-            L2 = tf.layers.dropout(L2, rate=0.8, training=isTraining)
+            L2 = tf.layers.batch_normalization(L2, rate=0.8, training=isTraining)
 
         with tf.name_scope('Layer3'):
             L2 = tf.contrib.layers.flatten(L2)
