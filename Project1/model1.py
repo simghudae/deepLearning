@@ -1,5 +1,6 @@
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
+tf.logging.set_verbosity(tf.logging.ERROR)
 
 mnist = input_data.read_data_sets("./mnist/data", one_hot=True)
 #tensorboard --logdir=./logs
@@ -11,6 +12,8 @@ graphModel1 = tf.Graph()
 with graphModel1.as_default():
     X = tf.placeholder(tf.float32, shape=[None, 28, 28, 1], name="X")
     Y = tf.placeholder(tf.float32, shape=[None, 10], name="Y")
+
+    tf.summary.histogram("X", X)
     isTraining = tf.placeholder(tf.bool)
     globalStep = tf.Variable(0, trainable=False)
 

@@ -1,9 +1,5 @@
 import tensorflow as tf
 #tensorflow의 기초
-
-
-
-
 # rank = 차원수, shape = 차원의 요소
 # ex rank=0 : 스칼라, rank=1 : vector, rank=2 : matrix ...
 # type = string, float, int

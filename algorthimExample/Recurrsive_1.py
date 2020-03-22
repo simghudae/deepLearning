@@ -1,5 +1,5 @@
+#https://programmers.co.kr/learn/courses/30/lessons/43164
 tickets = [['ICN', 'SFO'], ['ICN', 'ATL'], ['SFO', 'ATL'], ['ATL', 'ICN'], ['ATL', 'SFO']]
-#recursive case
 
 def solution(tickets, answer=["ICN"]):
     candidates = [index for index, ticket in enumerate(tickets) if ticket[0] == answer[-1]]

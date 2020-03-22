@@ -1,6 +1,4 @@
 def BFS(graph, startNode):
-    #graph is dict type
-    #say hello123
     visit, queue = [], []
     queue.append(startNode)
     while queue:
@@ -8,5 +6,4 @@ def BFS(graph, startNode):
         if node not in visit:
             visit.append(node)
             queue.append(graph[node])
-
     return visit

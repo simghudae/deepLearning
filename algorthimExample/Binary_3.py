@@ -1,8 +1,7 @@
 distance = 25
 rocks = [2, 14, 11, 21, 17]
 n = 2
-
-
+#https://programmers.co.kr/learn/courses/30/lessons/43236
 def solution(distance, rocks, n):
     rocks.sort()
     rocks.append(distance)
