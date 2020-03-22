@@ -6,6 +6,7 @@ def BFS(graph, startNode):
         if node not in visit:
             visit.append(node)
             queue.append(graph[node])
+<<<<<<< HEAD
 
     return visit
 
@@ -44,3 +45,6 @@ target = 'cog'
 words = ['hot', 'dot', 'dog', 'lot', 'log', 'cog']
 
 solution(begin, target, words)
+=======
+    return visit
+>>>>>>> exercise

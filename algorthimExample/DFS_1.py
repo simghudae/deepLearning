@@ -1,3 +1,4 @@
+#https://programmers.co.kr/learn/courses/30/lessons/43162
 computers = [[1, 1, 0], [1, 1, 0], [0, 0, 1]]
 n = 3
 
