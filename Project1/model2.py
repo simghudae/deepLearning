@@ -62,8 +62,8 @@ with graphModel2.as_default():
         variableDiscriminate = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='generator')
         variableGenerate = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='discriminator')
 
-        trainDiscriminate = tf.train.AdamOptimizer(learningRate).minimize(-lossDiscriminate, var_list=variableDiscriminate, global_step=globalStep)
-        trainGenerate = tf.train.AdamOptimizer(learningRate).minimize(-lossGenerate, var_list=variableGenerate, global_step=globalStep)
+        trainDiscriminate = tf.train.AdamOptimizer(learningRate).minimize(lossDiscriminate, var_list=variableDiscriminate, global_step=globalStep)
+        trainGenerate = tf.train.AdamOptimizer(learningRate).minimize(lossGenerate, var_list=variableGenerate, global_step=globalStep)
         tf.summary.scalar("lossDiscriminate", lossDiscriminate)
         tf.summary.scalar("lossGenerate", lossGenerate)
 
