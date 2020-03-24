@@ -52,14 +52,14 @@ with graphModel1.as_default():
 with tf.Session(graph=graphModel1) as sess:
     saver = tf.train.Saver(tf.global_variables())
     # print(tf.global_variables())
-    ckpt = tf.train.get_checkpoint_state('.\\model1')
+    ckpt = tf.train.get_checkpoint_state('.\\model')
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
         sess.run(tf.global_variables_initializer())
 
     merged = tf.summary.merge_all()
-    writer = tf.summary.FileWriter('./logs1', sess.graph)
+    writer = tf.summary.FileWriter('./logs', sess.graph)
 
     totalBatch = mnist.train.num_examples // batchSize
     for epoch in range(totalEpoch):
@@ -74,4 +74,4 @@ with tf.Session(graph=graphModel1) as sess:
         writer.add_summary(summary, global_step=sess.run(globalStep))
 
     print("accuracy : {0}".format(sess.run(accuracy, feed_dict={X: mnist.test.images.reshape(-1, 28, 28, 1), Y: mnist.test.labels, isTraining: False})))
-    saver.save(sess, "./model1/cnn.ckpt", global_step=globalStep)
+    saver.save(sess, "./model/cnn.ckpt", global_step=globalStep)

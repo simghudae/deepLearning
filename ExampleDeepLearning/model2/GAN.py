@@ -72,14 +72,14 @@ lossDisc, lossGene = 0, 0
 
 with tf.Session(graph=graphModel2) as sess:
     saver = tf.train.Saver(tf.global_variables())
-    ckpt = tf.train.get_checkpoint_state('.\\model2')
+    ckpt = tf.train.get_checkpoint_state('.\\model')
     if ckpt and tf.train.checkpoint_exists(ckpt.model_checkpoint_path):
         saver.restore(sess, ckpt.model_checkpoint_path)
     else:
         sess.run(tf.global_variables_initializer())
 
     merged = tf.summary.merge_all()
-    writer = tf.summary.FileWriter('./logs2', sess.graph)
+    writer = tf.summary.FileWriter('./logs', sess.graph)
 
     for epoch in range(totalEpoch):
         errorGene, errorDisc = 0, 0
@@ -94,4 +94,4 @@ with tf.Session(graph=graphModel2) as sess:
         writer.add_summary(summary, global_step=sess.run(globalStep))
 
         print("Epoch : {0}, Generator : {1:.3f}, Discriminator : {2:.3f}".format(epoch + 1, errorGene / totalBatch, errorDisc / totalBatch))
-    saver.save(sess, "./model2/gan.ckpt", global_step=globalStep)
+    saver.save(sess, "./model/gan.ckpt", global_step=globalStep)
