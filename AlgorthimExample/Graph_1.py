@@ -1,7 +1,7 @@
 n = 5
 results = [[4, 3], [4, 2], [3, 2], [1, 2], [2, 5]]
 
-
+#https://programmers.co.kr/learn/courses/30/lessons/49191
 def solution(n, results):
     answer = 0
     for _n in range(1, n + 1):
@@ -21,9 +21,3 @@ def solution(n, results):
         if len(winList) + len(lossList) == n - 1:
             answer += 1
     return answer
-
-
-INF = 987654312
-import numpy as np
-
-matrixRoute = abs(np.eye(n, n) - np.ones([n, n])) * INF
