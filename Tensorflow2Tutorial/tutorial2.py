@@ -1,28 +1,31 @@
-import  tensorflow as tf
-import timeit
-cell = tf.keras.layers.LSTMCell(10)
-@tf.function
-def fn(input, state):
-    """
-    use static graph to compute LSTM
-    :param input:
-    :param state:
-    :return:
-    """
+import tensorflow as tf
+from tensorflow import keras
 
-    return cell(input, state)
+(xs, ys), _ = keras.datasets.mnist.load_data()
+xs = tf.convert_to_tensor(xs, dtype=tf.float32) / 255.
+db = tf.data.Dataset.from_tensor_slices((xs, ys))
+db = db.batch(32).repeat(10)
 
+network = keras.Sequential([keras.layers.Dense(256, activation='relu'),
+                            keras.layers.Dense(256, activation='relu'),
+                            keras.layers.Dense(256, activation='relu'),
+                            keras.layers.Dense(10)])
+network.build(input_shape=(None, 28 * 28))
+optimizer = keras.optimizers.SGD(lr=0.01)
+accMeter = keras.metrics.Accuracy()
 
+for step, (x, y) in enumerate(db):
+    with tf.GradientTape() as tape:
+        x = tf.reshape(x, (-1, 28 * 28))
+        predict = network(x)
+        yOnehot = tf.one_hot(y, depth=10)
+        loss = tf.square(predict - yOnehot)
+        loss = tf.reduce_sum(loss) / 32
+    accMeter.update_state(tf.argmax(predict, axis=1), y)
 
-input = tf.zeros([10, 10])
-state = [tf.zeros([10, 10])] * 2
+    grads = tape.gradient(loss, network.trainable_variables)
+    optimizer.apply_gradients(zip(grads, network.trainable_variables))
 
-# warmup
-cell(input, state)
-fn(input, state)
-
-
-dynamic_graph_time = timeit.timeit(lambda: cell(input, state), number=100)
-static_graph_time = timeit.timeit(lambda: fn(input, state), number=100)
-print('dynamic_graph_time:', dynamic_graph_time)
-print('static_graph_time:', static_graph_time)
+    if step % 200 == 0:
+        print("step : {0}, loss :{1:.3f}, acc : {2:.3f}".format(step, loss, accMeter.result().numpy()))
+        accMeter.reset_states()
