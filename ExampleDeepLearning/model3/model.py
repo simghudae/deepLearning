@@ -1,85 +1,92 @@
-import os
-import numpy as np
 import tensorflow as tf
-from tensorflow import keras
-from tensorflow.python.ops import summary_ops_v2
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-
-model = keras.Sequential([
-    keras.layers.Reshape(target_shape=(28, 28, 1), input_shape=(28, 28,)),
-    keras.layers.Conv2D(2, 5, padding='same', activation=tf.nn.relu),
-    keras.layers.MaxPooling2D((2, 2), (2, 2), padding='same'),
-    keras.layers.BatchNormalization(),
-    keras.layers.Conv2D(4, 5, padding='same', activation=tf.nn.relu),
-    keras.layers.MaxPooling2D((2, 2,), (2, 2), padding='same'),
-    keras.layers.BatchNormalization(),
-    keras.layers.Flatten(),
-    keras.layers.Dense(32, activation=tf.nn.relu),
-    keras.layers.Dropout(rate=0.4),
-    keras.layers.Dense(10)])
-
-computeLoss = keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-computeAccuracy = keras.metrics.SparseCategoricalAccuracy()
-optimizer = keras.optimizers.SGD(learning_rate=0.001, momentum=0.5)
+import numpy as np
+import random
+from collections import deque
 
 
-def mnist_dataset():
-    (xTrain, yTrain), (xTest, yTest) = keras.datasets.mnist.load_data()
-    xTrain, xTest = xTrain / np.float32(255), xTest / np.float32(255)
-    yTrain, yTest = yTrain.astype(np.int64), yTest.astype(np.int64)
-    trainDataSet = tf.data.Dataset.from_tensor_slices((xTrain, yTrain))
-    testDataSet = tf.data.Dataset.from_tensor_slices((xTest, yTest))
-    return trainDataSet, testDataSet
+class DQN:
+    replayMemory = 10000
+    batchSize = 32
+    gamma = 0.99
+    stateLen = 4
 
+    def __init__(self, session, width, height, nAction):
+        self.session = session
+        self.nAction = nAction
+        self.width = width
+        self.height = height
+        self.memory = deque()
+        self.state = None
 
-trainDs, testDs = mnist_dataset()
-trainDs = trainDs.shuffle(60000).batch(100)
-testDs = testDs.batch(100)
+        self.inputX = tf.placeholder(tf.float32, [None, width, height, self.stateLen])
+        self.inputA = tf.placeholder(tf.int64, [None])
+        self.inputY = tf.placeholder(tf.float32, [None])
 
-def train(model, optimizer, dataSet, epoch):
-    avgLoss = keras.metrics.Mean('loss', dtype=tf.float32)
-    for images, labels in dataSet:
-        with tf.GradientTape() as tape:
-            logits = model(images, training=True)
-            loss = computeLoss(labels, logits)
-            computeAccuracy(labels, logits)
-        grads = tape.gradient(loss, model.trainable_variables)
-        optimizer.apply_gradients(zip(grads, model.trainable_variables))
-        avgLoss(loss)
+        self.Q = self._buildNetwork('main')
+        self.cost, self.trainOp = self._buildOp()
 
-    summary_ops_v2.scalar('loss', avgLoss.result(), step=epoch)
-    summary_ops_v2.scalar('accuracy', computeAccuracy.result(), step=epoch)
-    print("epoch : {0}, loss : {1:.3f}, acc : {2:.3f}".format(epoch+1, avgLoss.result().numpy(), computeAccuracy.result().numpy()))
-    avgLoss.reset_states()
-    computeAccuracy.reset_states()
+        self.targetQ = self._buildNetwork('target')
 
-def test(model, dataSet):
-    avgLoss = keras.metrics.Mean('loss', dtype=tf.float32)
-    for (images, labels) in dataSet:
-        logits = model(images, training=False)
-        avgLoss(computeLoss(labels, logits))
-        computeAccuracy(labels, logits)
-    print("loss : {0:.4f}, Acc : {1:.4f}".format(avgLoss.result(), computeAccuracy.result()))
+    def _buildNetwork(self, name):
+        with tf.variable_scope(name):
+            model = tf.layers.conv2d(self.inputX, 32, [4, 4], padding='same', activation=tf.nn.relu)
+            model = tf.layers.conv2d(model, 64, [2, 2], padding='same', activation=tf.nn.relu)
+            model = tf.contrib.layers.flatten(model)
+            Q = tf.layers.dense(model, self.nAction, activation=None)
+        return Q
 
-def applyClean(modelDIR):
-    if tf.io.gfile.exists(modelDIR):
-        print('Removing existing model dir :{}'.format(modelDIR))
-        tf.io.gfile.rmtree(modelDIR)
+    def _buildOp(self):
+        oneHot = tf.one_hot(self.inputA, self.nAction, 1.0, 0.0)
+        QValue = tf.reduce_sum(tf.multiply(self.Q, oneHot), axis=1)
+        cost = tf.reduce_mean(tf.square(self.inputY - QValue))
+        trainOp = tf.train.AdamOptimizer(1e-6).minimize(cost)
+        return cost, trainOp
 
-modelDIR = './tmp/'
-# applyClean(modelDIR)
+    def updateTargetNetwork(self):
+        copyOp = []
+        mainVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='main')
+        targetVars = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='target')
 
-checkpointDir = os.path.join(modelDIR, 'checkpoints')
-checkpointPrefix = os.path.join(checkpointDir, 'ckpt')
-ckeckpoint = tf.train.Checkpoint(model=model, optimizer=optimizer)
-ckeckpoint.restore(tf.train.latest_checkpoint(checkpointDir))
+        for mainVar, targetVar in zip(mainVars, targetVars):
+            copyOp.append(targetVar.assign(mainVar.value()))
+        self.session.run(copyOp)
 
+    def getAction(self):
+        QValue = self.session.run(self.Q, feed_dict={self.inputX: [self.state]})
+        action = np.argmax(QValue[0])
+        return action
 
-totalEpoch = 10
-for i in range(totalEpoch):
-    train(model, optimizer, trainDs, i)
-    ckeckpoint.save(checkpointPrefix)
+    def train(self):
+        state, nextState, action, reward, terminal = self._sampleMemory()
+        targetQValue = self.session.run(self.targetQ, feed_dict={self.inputX: nextState})
 
-exportPath = os.path.join(modelDIR, 'export')
-tf.saved_model.save(model, modelDIR)
+        Y = []
+        for i in range(self.batchSize):
+            if terminal[i]:
+                Y.append(reward[i])
+            else:
+                Y.append(reward[i] + self.gamma * np.max(targetQValue[i]))
+        self.session.run(self.trainOp, feed_dict={self.inputX: state, self.inputA: action, self.inputY: Y})
 
+    def initState(self, state):
+        state = [state for _ in range(self.stateLen)]
+        self.state = np.stack(state, axis=2)
+
+    def remember(self, state, action, reward, terminal):
+        nextState = np.reshape(state, (self.width, self.height, 1))
+        nextState = np.append(self.state[:, :, 1:], nextState, axis=2)
+        self.memory.append((self.state, nextState, action, reward, terminal))
+
+        if len(self.memory) > self.replayMemory:
+            self.memory.popleft()
+        self.state = nextState
+
+    def _sampleMemory(self):
+        sampleMemory = random.sample(self.memory, self.batchSize)
+        state = [memory[0] for memory in sampleMemory]
+        nextState = [memory[1] for memory in sampleMemory]
+        action = [memory[2] for memory in sampleMemory]
+        reward = [memory[3] for memory in sampleMemory]
+        terminal = [memory[4] for memory in sampleMemory]
+
+        return state, nextState, action, reward, terminal
