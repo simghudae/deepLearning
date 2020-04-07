@@ -1,22 +1,30 @@
-n = 6
-edge = [[3, 6], [4, 3], [3, 2], [1, 3], [1, 2], [2, 4], [5, 2]]
+k = 3
+number = "1231234"
 
 
-def solution(n, edge):
-    edgeDict = {i: [] for i in range(1, n + 1)}
-    for [i, j] in edge:
-        edgeDict[i].append(j)
-        edgeDict[j].append(i)
-    vistedNode, candidateNode = [1], [1]
-    while True:
-        nextNode = []
-        for candidate in candidateNode:
-            nextCandidate = [i for i in edgeDict[candidate]]
-            nextNode.extend(nextCandidate)
+def solution(number, k):
+    answer, count = number[0], 0
 
-        nextNode = set(nextNode).difference(set(vistedNode))
-        candidateNode = list(nextNode)
-        vistedNode += candidateNode
-        if len(vistedNode) == n:
+    for i in range(1, len(number)):
+        if int(answer[-1]) > int(number[i]):
+            answer += number[i]
+
+        else:
+            for j in range(len(answer) - 1, -1, -1):
+                if int(answer[j]) < int(number[i]):
+                    count += 1
+                elif int(answer[j]) >= int(number[i]):
+                    break
+                elif count >= k:
+                    break
+            # print(j, answer, number[i])
+            if len(answer) == 1:
+                answer = number[i]
+            else:
+                answer = answer[:j + 1] + number[i]
+        if count >= k:
             break
-    return len(candidateNode)
+
+        print(number[i], answer, count)
+
+    return answer

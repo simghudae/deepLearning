@@ -1,31 +1,42 @@
+import os
 import tensorflow as tf
 from tensorflow import keras
 
-(xs, ys), _ = keras.datasets.mnist.load_data()
-xs = tf.convert_to_tensor(xs, dtype=tf.float32) / 255.
-db = tf.data.Dataset.from_tensor_slices((xs, ys))
-db = db.batch(32).repeat(10)
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = '2'
 
-network = keras.Sequential([keras.layers.Dense(256, activation='relu'),
-                            keras.layers.Dense(256, activation='relu'),
-                            keras.layers.Dense(256, activation='relu'),
-                            keras.layers.Dense(10)])
-network.build(input_shape=(None, 28 * 28))
-optimizer = keras.optimizers.SGD(lr=0.01)
-accMeter = keras.metrics.Accuracy()
 
-for step, (x, y) in enumerate(db):
-    with tf.GradientTape() as tape:
-        x = tf.reshape(x, (-1, 28 * 28))
-        predict = network(x)
-        yOnehot = tf.one_hot(y, depth=10)
-        loss = tf.square(predict - yOnehot)
-        loss = tf.reduce_sum(loss) / 32
-    accMeter.update_state(tf.argmax(predict, axis=1), y)
+def prepareMnist(x, y):
+    x = tf.cast(x, tf.float32) / 255.0
+    y = tf.cast(y, tf.int64)
+    return x, y
 
-    grads = tape.gradient(loss, network.trainable_variables)
-    optimizer.apply_gradients(zip(grads, network.trainable_variables))
 
-    if step % 200 == 0:
-        print("step : {0}, loss :{1:.3f}, acc : {2:.3f}".format(step, loss, accMeter.result().numpy()))
-        accMeter.reset_states()
+def mnistDataset():
+    (x, y), (xVal, yVal) = keras.datasets.fashion_mnist.load_data()
+    y, yVal = tf.one_hot(y, depth=10), tf.one_hot(yVal, depth=10)
+    ds = tf.data.Dataset.from_tensor_slices((x, y))
+    ds = ds.map(prepareMnist)
+    ds = ds.shuffle(60000).batch(100)
+
+    dsVal = tf.data.Dataset.from_tensor_slices((xVal, yVal))
+    dsVal = dsVal.map(prepareMnist)
+    dsVal = dsVal.shuffle(10000).batch(100)
+    return ds, dsVal
+
+
+def main():
+    trainDataset, valDataset = mnistDataset()
+
+    model = keras.Sequential([
+        keras.layers.Reshape(target_shape=(28 * 28,), input_shape=(28, 28)),
+        keras.layers.Dense(200, activation='relu'),
+        keras.layers.Dense(200, activation='relu'),
+        keras.layers.Dense(200, activation='relu'),
+        keras.layers.Dense(10)
+    ])
+    model.compile(optimizer=keras.optimizers.Adam(0.001), loss=tf.losses.CategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+    model.fit(trainDataset.repeat(), epochs=30, steps_per_epoch=500, validation_data=valDataset.repeat(), validation_steps=2)
+
+
+if __name__ == '__main__':
+    main()
