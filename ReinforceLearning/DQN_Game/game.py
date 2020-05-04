@@ -19,28 +19,33 @@ class Game:
             self.fig, self.axis = self._prepareDisplay()
             self._drawScreen()
 
-        # continue games
-        while self.state:
-            self.oneGameUser()
+        if controlUser:
+            # continue games
+            while self.state:
+                self.oneGameUser()
+
+    def setAction(self, action):
+        self.oneStep(str(action))
+
+        if not self.gameState:
+            self.gameNum += 1
+            self.reset()
+
+    def getState(self):
+        _screen = np.expand_dims(self.screen, axis=0)
+        return [_screen, [self.gameState, self.reward, self.step, self.gameNum]]
 
     def oneGameUser(self):
         while self.gameState:
-            if self.controlUser:
-                action = str(input("please action insert : "))
-            else:
-                action = self.getAction()
-
+            action = str(input("please action insert : "))
             if action == 'stop':
                 self.state, self.gameState = False, False
             self.oneStep(action)
         self.gameNum += 1
         self.reset()
 
-    def getAction(self, action):
-        return str(action)
-
     def oneStep(self, action):  # 게임의 진행
-        self.reward += self._updateAll(action)
+        self.totalReward += self._updateAll(action)
         self.step += 1
         if self.showGame:
             self._drawScreen()
@@ -58,9 +63,9 @@ class Game:
             patch.remove()
 
         _patchList = []
-        self.axis.set_title("Game : {0}, Step {1}, Reward : {2}".format(self.gameNum, self.step, self.reward), fontsize=12)
+        self.axis.set_title("Game : {0}, Step {1}, Reward : {2}".format(self.gameNum, self.step, self.totalReward), fontsize=12)
 
-        carState, boxState = self._getState()
+        carState, boxState = self._getPoint()
         _patchList = [patches.Circle(xy=(box[0], box[1]), radius=0.5, facecolor='blue') for box in boxState]
         _patchList.extend(patches.Circle(xy=(box[0], box[1]), radius=0.1, facecolor='red') for box in boxState)
         _patchList.append(patches.Rectangle(xy=(carState[0] - 1 / 2, carState[1]), width=1, height=1, facecolor='blue'))
@@ -70,29 +75,30 @@ class Game:
             self.axis.add_patch(patch)
 
         self.fig.canvas.draw()
+        plt.pause(0.001)
         self.patchList = _patchList
 
-    def _getState(self):  # 게임의 상태를 가지고 오는것으로 2차원 배열에 사물이 있으면 1 없으면 0
+    def reset(self):  # 자동차와 장매울의 위치와 보상값을 초기화
+        self.totalReward, self.reward, self.screen[:], self.step = 0, 0, 0, 0
+        self.gameState = True
+        self.screen[self.screen.shape[0] // 2, 0] = 2  # reset Car
+
+    def _getPoint(self):  # 게임의 상태를 가지고 오는것으로 2차원 배열에 사물이 있으면 1 없으면 0
         carWidth, carHeight = np.where(self.screen == 2)
         boxWidth, boxHeight = np.where(self.screen == 1)
         return [carWidth, carHeight], [[width, height] for width, height in zip(list(boxWidth), list(boxHeight))]
 
-    def reset(self):  # 자동차와 장매울의 위치와 보상값을 초기화
-        self.reward, self.screen[:], self.step = 0, 0, 0
-        self.gameState = True
-        self.screen[self.screen.shape[0] // 2, 0] = 2  # reset Car
-
     def _updateAll(self, move):
-        carPosition, boxPosition = self._getState()
+        carPosition, boxPosition = self._getPoint()
         carWidth, carHeight = carPosition
 
         # update Box
-        countReward = 0
+        self.reward = 0
         for box in boxPosition:
             boxWidth, boxHeight = box
             if boxHeight == 0:
                 self.screen[boxWidth, boxHeight] = 0
-                countReward += 1
+                self.reward += 1
 
             elif boxHeight == 1 and self.screen[boxWidth, 0] == 2:
                 continue
@@ -120,7 +126,7 @@ class Game:
                 self.gameState = False
             self.screen[carWidth, carHeight] = 0
             self.screen[carWidth + 1, carHeight] = 2
-        return countReward
+        return self.reward
 
 
 if __name__ == '__main__':
